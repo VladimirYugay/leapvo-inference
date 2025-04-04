@@ -13,5 +13,6 @@ for imagedir in "$BASE_DIR"/*/; do
     --config-path=../configs \
     --config-name=scannet \
     data.imagedir="$imagedir" \
+    data.name=scannet \
     data.savedir="$OUTPUT_DIR/$scene_name"
 done

@@ -42,13 +42,47 @@ def scannet_image_stream(imagedir):
         yield (float(i), image, c2ws[i], intrinsics)
 
 
+def arkit_image_stream(imagedir):
+    """ Image generator for ScanNet """
+    imagedir = Path(imagedir)
+    video_path = imagedir / "video.mp4"
+    pose_path = imagedir / "poses.npz"
+    intrinsics_path = imagedir / "intrinsics.npz"
+
+    vr = VideoReader(str(video_path))
+    c2ws = np.load(pose_path)["poses"]
+
+    # Take everything until first invalid pose
+    inf_ids = np.where(np.isinf(c2ws).any(axis=(1, 2)))[0]
+    if inf_ids.size > 0:
+        c2ws = c2ws[:inf_ids.min()]
+
+    # Move to the origin for visualization
+    c2ws = np.linalg.inv(c2ws[0]) @ c2ws
+
+    # Load intrinsics
+    all_intrinsics = np.load(intrinsics_path)["intrinsics"]
+
+    for i in range(50):
+        image = vr[i].asnumpy()
+        image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+        intrinsics = all_intrinsics[i]
+        fx, fy, cx, cy = intrinsics[0, 0], intrinsics[1, 1], intrinsics[0, 2], intrinsics[1, 2]
+        intrinsics = np.array([fx, fy, cx, cy])
+        yield (float(i), image, c2ws[i], intrinsics)
+
+
 @hydra.main(version_base=None, config_path="configs", config_name="demo")
 def main(cfg: DictConfig):
 
     slam = None
 
     imagedir = cfg.data.imagedir
-    dataloader = scannet_image_stream(imagedir)
+
+    if cfg.data.name == "scannet":
+        dataloader = scannet_image_stream(imagedir)
+    elif cfg.data.name == "arkit":
+        dataloader = scannet_image_stream(imagedir)
 
     gt_poses = []
     image_list = []
