@@ -63,7 +63,7 @@ def arkit_image_stream(imagedir):
     # Load intrinsics
     all_intrinsics = np.load(intrinsics_path)["intrinsics"]
 
-    for i in range(50):
+    for i in range(c2ws.shape[0]):
         image = vr[i].asnumpy()
         image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
         intrinsics = all_intrinsics[i]
