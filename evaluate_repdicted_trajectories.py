@@ -122,19 +122,16 @@ def load_tum_trajectory(filepath):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--predictions_path", type=str, required=True, help="Path to the folder containing predictions")
-    parser.add_argument("--split_file", type=str, required=True, help="Path to the folder containing scene outputs")
     parser.add_argument("--output_path", type=str, required=True, help="Path to the folder containing predictions")
     parser.add_argument("--plot_traj", action="store_true", help="Plot trajectory")
     parser.add_argument("--eval_stride", default=3, type=int, help="Stride for evaluation only")
     args = parser.parse_args()
 
-    with open(args.split_file, 'r') as f:
-        scene_names = sorted([line.strip() for line in f.readlines()])
-
     output_path = Path(args.output_path)
     average_metrics = defaultdict(list)
 
     predictions_path = Path(args.predictions_path)
+    scene_names = [scene_path.parts[-1] for scene_path in sorted(predictions_path.glob("*")) if scene_path.is_dir()]
     for i, scene_name in enumerate(scene_names):
         print(f"Processing scene: {scene_name}, {i + 1}/{len(scene_names)}")
         pred_poses = load_tum_trajectory(predictions_path / scene_name / "pred_traj.txt")
