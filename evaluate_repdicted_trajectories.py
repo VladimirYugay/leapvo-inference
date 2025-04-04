@@ -125,6 +125,7 @@ def main():
     parser.add_argument("--split_file", type=str, required=True, help="Path to the folder containing scene outputs")
     parser.add_argument("--output_path", type=str, required=True, help="Path to the folder containing predictions")
     parser.add_argument("--plot_traj", action="store_true", help="Plot trajectory")
+    parser.add_argument("--eval_stride", default=3, type=int, help="Stride for evaluation only")
     args = parser.parse_args()
 
     with open(args.split_file, 'r') as f:
@@ -138,6 +139,10 @@ def main():
         print(f"Processing scene: {scene_name}, {i + 1}/{len(scene_names)}")
         pred_poses = load_tum_trajectory(predictions_path / scene_name / "pred_traj.txt")
         gt_poses = np.load(predictions_path / scene_name / "gt_traj.npy")
+
+        # Evaluate every stride frame to match the eval protocol of Cut3r and VGGT
+        pred_poses = pred_poses[::args.eval_stride]
+        gt_poses = gt_poses[::args.eval_stride]
 
         metrics, traj_img = eval_trajectory(pred_poses, gt_poses, np.arange(len(pred_poses)), align=False)
         aligned_metrics, _ = eval_trajectory(pred_poses, gt_poses, np.arange(len(pred_poses)), align=True)
