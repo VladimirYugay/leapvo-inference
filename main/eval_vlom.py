@@ -36,7 +36,7 @@ def scannet_image_stream(imagedir):
     fx, fy, cx, cy = intrinsics[0, 0], intrinsics[1, 1], intrinsics[0, 2], intrinsics[1, 2]
     intrinsics = np.array([fx, fy, cx, cy])
 
-    for i in range(50):
+    for i in range(c2ws.shape[0]):
         image = vr[i].asnumpy()
         image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
         yield (float(i), image, c2ws[i], intrinsics)
@@ -82,7 +82,7 @@ def main(cfg: DictConfig):
     if cfg.data.name == "scannet":
         dataloader = scannet_image_stream(imagedir)
     elif cfg.data.name == "arkit":
-        dataloader = scannet_image_stream(imagedir)
+        dataloader = arkit_image_stream(imagedir)
 
     gt_poses = []
     image_list = []

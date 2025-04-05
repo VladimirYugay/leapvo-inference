@@ -1,24 +1,21 @@
 #!/bin/bash
 
-BASE_DIR="/home/vy/datasets/ScanNetVideos"
+BASE_DIR="/scratch/vyugay/datasets/ARKitVideos/"
 OUTPUT_DIR="test"
-SCENE_LIST="scenes.txt"  # file with scene names
+SCENE_LIST="/home/vyugay/projects/vlom/data/split_arkit/test.txt"
 
-# Read each line from the file
-while read -r scene_name; do
+awk '{print $1}' "$SCENE_LIST" | while read -r scene_name; do
   imagedir="$BASE_DIR/$scene_name"
 
   if [ -d "$imagedir" ]; then
-    echo "Processing scene: $scene_name"
-    echo "$imagedir"
-
+    echo "Processing: $scene_name"
     python main/eval_vlom.py \
       --config-path=../configs \
       --config-name=scannet \
       data.imagedir="$imagedir" \
-      data.name=scannet \
+      data.name=arkit \
       data.savedir="$OUTPUT_DIR/$scene_name"
   else
-    echo "Warning: $imagedir does not exist"
+    echo "Directory not found: $imagedir"
   fi
-done < "$SCENE_LIST"
+done
