@@ -11,6 +11,7 @@ from tqdm import tqdm
 
 from main.leapvo import LEAPVO
 from main.utils import save_trajectory_tum_format
+from tum_dataset import TUM_RGBD
 
 
 def scannet_image_stream(imagedir):
@@ -72,6 +73,17 @@ def arkit_image_stream(imagedir):
         yield (float(i), image, c2ws[i], intrinsics)
 
 
+def tum_image_stream(imagedir):
+    """ Image generator for ScanNet """
+
+    dataset = TUM_RGBD(imagedir)
+
+    for i in range(len(dataset)):
+        _, image, c2w = dataset[i]
+        intrinsics = np.array([dataset.fx, dataset.fy, dataset.cx, dataset.cy])
+        yield (float(i), image, c2w, intrinsics)
+
+
 @hydra.main(version_base=None, config_path="configs", config_name="demo")
 def main(cfg: DictConfig):
 
@@ -83,6 +95,15 @@ def main(cfg: DictConfig):
         dataloader = scannet_image_stream(imagedir)
     elif cfg.data.name == "arkit":
         dataloader = arkit_image_stream(imagedir)
+    elif cfg.data.name == "tum":
+        dataloader = tum_image_stream(imagedir)
+
+    if Path(f"{cfg.data.savedir}/pred_traj.txt").exists():
+        print("Skipping", cfg.data.savedir)
+        return
+
+    import time
+    start_time = time.time()
 
     gt_poses = []
     image_list = []
@@ -104,6 +125,7 @@ def main(cfg: DictConfig):
 
     # tx ty tz qw qx qy qz
     pred_traj = slam.terminate()
+    print("Speed", len(image_list), time.time() - start_time)
 
     os.makedirs(f"{cfg.data.savedir}", exist_ok=True)
     pred_traj = list(pred_traj)
