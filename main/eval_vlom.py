@@ -84,6 +84,36 @@ def tum_image_stream(imagedir):
         yield (float(i), image, c2w, intrinsics)
 
 
+def kitti_image_stream(imagedir):
+    """ Image generator for ScanNet """
+    imagedir = Path(imagedir)
+    video_path = imagedir / "video.mp4"
+    pose_path = imagedir / "poses.npz"
+
+    vr = VideoReader(str(video_path))
+    c2ws = np.load(pose_path)["poses"]
+    c2ws = np.linalg.inv(c2ws[0]) @ c2ws
+
+    K = np.array([
+        [707.0912,   0.0,     601.8873],
+        [  0.0,    707.0912,  183.1104],
+        [  0.0,      0.0,       1.0   ]
+    ])
+
+    for i in range(c2ws.shape[0]):
+        image = vr[i].asnumpy()
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+
+        # H, W, _ = image.shape
+        # H, W = (H - H%4, W - W%4)
+        # image = image[..., :H, :W, :]
+
+        intrinsics = K
+        fx, fy, cx, cy = intrinsics[0, 0], intrinsics[1, 1], intrinsics[0, 2], intrinsics[1, 2]
+        intrinsics = np.array([fx, fy, cx, cy])
+        yield (float(i), image, c2ws[i], intrinsics)
+
+
 @hydra.main(version_base=None, config_path="configs", config_name="demo")
 def main(cfg: DictConfig):
 
@@ -97,6 +127,8 @@ def main(cfg: DictConfig):
         dataloader = arkit_image_stream(imagedir)
     elif cfg.data.name == "tum":
         dataloader = tum_image_stream(imagedir)
+    elif cfg.data.name == "kitti":
+        dataloader = kitti_image_stream(imagedir)
 
     if Path(f"{cfg.data.savedir}/pred_traj.txt").exists():
         print("Skipping", cfg.data.savedir)
